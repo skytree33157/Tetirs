@@ -18,6 +18,8 @@ public class GamePanel extends JPanel{
     private boolean isGameOver = false;
     private Block nextBlock;
     private Block block;
+    private Block holdBlock;
+    private boolean checkHoldBlock = true;
 
     public GamePanel(){
         setBackground(Color.BLACK);
@@ -41,13 +43,14 @@ public class GamePanel extends JPanel{
                 else{
                     //끝에 도달하면 보드에 저장
                     endBlock();
+                    checkHoldBlock=true;
                     //한 라인이 꽉 찼는지 확인
                     checkLine();
 
                     block = nextBlock;
                     block.setX(4);
                     block.setY(0);
-                    nextBlock=new Block(0);//new Block((int)(Math.random()*7));
+                    nextBlock = new Block((int)(Math.random()*7));
 
                     if(checkCollision(block.getX(), block.getY())){
                         isGameOver = true;
@@ -132,6 +135,26 @@ public class GamePanel extends JPanel{
                 }
             }
         }
+        g.setColor(Color.white);
+        g.drawString("Hold Block", sideX, 300);
+
+        if(holdBlock!=null) {
+            int[][] holdShape = holdBlock.getCurShape();
+            g.setColor(holdBlock.getCurColor());
+
+            for (int row = 0; row < holdShape.length; row++) {
+                for (int col = 0; col < holdShape[row].length; col++) {
+                    if (holdShape[row][col] == 1) {
+                        int holdBlockX = col * BLOCK_SIZE + sideX;
+                        int holdBlockY = row * BLOCK_SIZE + 350;
+                        g.fillRect(holdBlockX, holdBlockY, BLOCK_SIZE, BLOCK_SIZE);
+                        g.setColor(Color.black);
+                        g.drawRect(holdBlockX, holdBlockY, BLOCK_SIZE, BLOCK_SIZE);
+                        g.setColor(holdBlock.getCurColor());
+                    }
+                }
+            }
+        }
 
         //게임오버
         if(isGameOver){
@@ -155,13 +178,47 @@ public class GamePanel extends JPanel{
                 block.moveRight();
             else if (key == KeyEvent.VK_DOWN && !checkCollision(block.getX(), block.getY()+1))
                 block.moveDown();
-            else if (key == KeyEvent.VK_UP) {
-                block.rotate();
+            else if (key == KeyEvent.VK_UP)
+                wallKick();
+            else if (key==KeyEvent.VK_SPACE && checkHoldBlock){
+                if(holdBlock==null){
+                    holdBlock=new Block(block.getBlockNum());
+                    block=nextBlock;
+                    nextBlock=new Block((int) (Math.random()*7));
+                }
+                else{
+                    Block tmp=holdBlock;
+                    holdBlock=new Block(block.getBlockNum());
+                    block=tmp;
+                }
+                block.setX(4);
+                block.setY(0);
+                checkHoldBlock=false;
             }
             repaint();
         }
     }
 
+    private void wallKick(){
+        block.rotate();
+        if(!checkCollision(block.getX(), block.getY()))
+            return;
+
+        int[][] offsets={
+                {1,0}, {-1,0}, {0,-1}, {1,-1}, {-1,-1}, {2,0}, {-2,0}
+        };
+
+        for(int[] offset: offsets){
+            int kickX=block.getX()+offset[0];
+            int kickY=block.getY()+offset[1];
+            if(!checkCollision(kickX,kickY)){
+                block.setX(kickX);
+                block.setY(kickY);
+                return;
+            }
+        }
+        block.rotate();block.rotate();block.rotate();
+    }
     private boolean checkCollision(int X, int Y){
         int[][] shape = block.getCurShape();
 
@@ -195,7 +252,6 @@ public class GamePanel extends JPanel{
                         boardColor[blockY][blockX]=color;
                     }
                 }
-
             }
         }
     }
@@ -210,11 +266,14 @@ public class GamePanel extends JPanel{
 
     private void clearLine(int targetRow){
         for(int row=targetRow;row>0;row--)
-            for(int col=0;col<WIDTH;col++)
-                board[row][col]=board[row-1][col];
-
-        for(int col=0;col<WIDTH;col++)
-            board[0][col]=0;
+            for(int col=0;col<WIDTH;col++) {
+                board[row][col] = board[row - 1][col];
+                boardColor[row][col]=boardColor[row-1][col];
+            }
+        for(int col=0;col<WIDTH;col++) {
+            board[0][col] = 0;
+            boardColor[0][col]=null;
+        }
     }
 
     private void checkLine(){

@@ -4,6 +4,7 @@ public class Block {
     private int[][] curShape;
     private Color curColor;
     private int x, y;
+    private int blockNum;
 
     public static final int [][][] shape={
             {
@@ -52,6 +53,7 @@ public class Block {
         this.curColor=color[idx];
         //블럭 초기 위치
         this.x=4;this.y=0;
+        this.blockNum=idx;
     }
 
     public int[][] getCurShape() {
@@ -84,6 +86,10 @@ public class Block {
 
     public void setY(int y) {
         this.y = y;
+    }
+
+    public int getBlockNum(){
+        return this.blockNum;
     }
 
     public void moveDown(){
