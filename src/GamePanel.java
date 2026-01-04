@@ -11,24 +11,36 @@ public class GamePanel extends JPanel{
     public static final int WIDTH = 10;
     public static final int HEIGHT = 20;
     public static final int BLOCK_SIZE = 30;
+
     private int[][] board = new int [HEIGHT][WIDTH];
     private Color[][] boardColor = new Color [HEIGHT][WIDTH];
     private Timer timer;
     public static int score = 0;
     private boolean isGameOver = false;
+    private boolean isGaming = false;
+
     private Block nextBlock;
     private Block block;
     private Block holdBlock;
     private boolean checkHoldBlock = true;
 
+    private Database db;
+    private JPanel loginPanel;
+    private JTextField idField;
+    private JPasswordField pwField;
+
     public GamePanel(){
         setBackground(Color.BLACK);
         //패널 크기
-        setPreferredSize(new Dimension(WIDTH*BLOCK_SIZE+120, HEIGHT*BLOCK_SIZE));
-
+        setPreferredSize(new Dimension(WIDTH*BLOCK_SIZE+150, HEIGHT*BLOCK_SIZE));
 
         block=new Block((int)(Math.random()*7));
         nextBlock=new Block((int)(Math.random()*7));
+
+        setLayout(new GridBagLayout());
+
+        db=new Database();
+        db.createTable();
 
         //키 리스너 추가
         addKeyListener(new Keyboard());
@@ -55,14 +67,77 @@ public class GamePanel extends JPanel{
                     if(checkCollision(block.getX(), block.getY())){
                         isGameOver = true;
                         timer.stop();
+                        //db.saveScore(UserID,score);
                     }
                 }
                 repaint();
             }
         });
-        timer.start();
+        loginScreen();
     }
 
+    private void loginScreen(){
+        loginPanel = new JPanel();
+        loginPanel.setLayout(new GridLayout(4,1,5,5));
+        loginPanel.setBackground(new Color(255,255,255,0));
+        loginPanel.setBorder(BorderFactory.createEmptyBorder(20,20,20,20));
+
+        JLabel titleLabel = new JLabel("Login", SwingConstants.CENTER);
+        titleLabel.setForeground(Color.white);
+        //titleLabel.setOpaque(true);
+        //titleLabel.setBackground(Color.white);
+
+        idField=new JTextField(10);
+        idField.setBorder(BorderFactory.createTitledBorder("Username"));
+        pwField=new JPasswordField(10);
+        pwField.setBorder(BorderFactory.createTitledBorder("Password"));
+
+        JPanel btnPanel = new JPanel(new FlowLayout());
+        JButton loginBtn = new JButton("login");
+        JButton registerBtn = new JButton("register");
+        btnPanel.setOpaque(false);
+
+        btnPanel.add(loginBtn);
+        btnPanel.add(registerBtn);
+
+        loginPanel.add(titleLabel);
+        loginPanel.add(idField);
+        loginPanel.add(pwField);
+        loginPanel.add(btnPanel);
+
+        loginBtn.addActionListener(e->{
+            String id=idField.getText();
+            String pw=new String(pwField.getPassword());
+            if(db.login(id,pw)){
+                startGame();
+            }
+            else{
+                JOptionPane.showMessageDialog(this,"로그인 실패");
+            }
+        });
+
+        registerBtn.addActionListener(e -> {
+            String id=idField.getText();
+            String pw=new String(pwField.getPassword());
+            if(db.register(id,pw)){
+                JOptionPane.showMessageDialog(this, "회원가입 성공, 로그인 해주세요");
+            }
+            else{
+                JOptionPane.showMessageDialog(this,"이미 존재하는 아이디");
+            }
+        });
+
+        add(loginPanel);
+    }
+
+    private void startGame(){
+        remove(loginPanel);
+        //레이아웃 갱신
+        revalidate();
+        repaint();
+        isGaming=true;
+        timer.start();
+    }
 
     @Override
     protected void paintComponent(Graphics g){
@@ -88,7 +163,7 @@ public class GamePanel extends JPanel{
         }
 
         //블록 소환
-        if(block!=null){
+        if(block!=null&&isGaming){
             int[][] shape = block.getCurShape();
             g.setColor(block.getCurColor());
 
@@ -118,7 +193,7 @@ public class GamePanel extends JPanel{
 
         g.drawString("Next Block", sideX, 150);
 
-        if(nextBlock!=null) {
+        if(nextBlock!=null&&isGaming) {
             int[][] nextShape = nextBlock.getCurShape();
             g.setColor(nextBlock.getCurColor());
 

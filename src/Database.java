@@ -4,7 +4,7 @@ import com.mysql.cj.protocol.Resultset;
 import java.sql.*;
 
 public class Database {
-    private static final String DB_URL = "jdbc:mysql://127.0.0.1:3306/Tetris?serverTimezone=UTC";
+    private static final String DB_URL = "jdbc:mysql://127.0.0.1:3306/Tetris?serverTimezone=UTC&createDatabaseIfNotExist=true";
     private static final String USER = "root";
     private static final String PASSWORD = "1234";
 
@@ -13,17 +13,29 @@ public class Database {
         return DriverManager.getConnection(DB_URL, USER, PASSWORD);
     }
 
+    public void createDB(){
+        try{
+            Connection con = getConnection();
+            String sql = "create database if not exists Tetris;";
+            Statement stmt = con.createStatement();
+            stmt.execute(sql);
+        }
+        catch(SQLException e){
+            System.out.println("SQLException"+e);
+        }
+    }
+
     public void createTable(){
         try{
             Connection con = getConnection();
-            String userSql = "create table user (" +
+            String userSql = "create table if not exists user (" +
                     "userID int auto_increment primary key," +
                     "username varchar(255) not null unique," +
                     "password varchar(255) not null)";
-            String gameScoreSql = "create table gameScore (" +
+            String gameScoreSql = "create table if not exists gameScore (" +
                     "userID int primary key," +
                     "score int default 0," +
-                    "foreign key (userID) reference user(userID) on delete cascade)";
+                    "foreign key (userID) references user(userID) on delete cascade)";
             Statement stmt = con.createStatement();
             stmt.execute(userSql);
             stmt.execute(gameScoreSql);
@@ -61,23 +73,23 @@ public class Database {
         }
     }
 
-    public int login(String username, String password){
+    public boolean login(String username, String password){
         try{
             Connection con = getConnection();
 
-            String loginSql = "select userID from user where username = ? and password= = ?";
+            String loginSql = "select userID from user where username = ? and password = ?";
             PreparedStatement loginSqlPtsmt = con.prepareStatement(loginSql);
             loginSqlPtsmt.setString(1,username);
             loginSqlPtsmt.setString(2,password);
             ResultSet rs = loginSqlPtsmt.executeQuery();
             if(rs.next()){
-                return rs.getInt("userID");
+                return true;
             }
         }
         catch(SQLException e){
             System.out.println("SQLException"+e);
         }
-        return -1;
+        return false;
     }
 
     public void saveScore(int userID, int score){

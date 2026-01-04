@@ -1,4 +1,5 @@
 import javax.swing.JFrame;
+
 public class Main extends JFrame{
     public Main(){
         setTitle("테트리스");
@@ -24,6 +25,8 @@ public class Main extends JFrame{
     }
 
     public static void main(String[] args){
+        Database db=new Database();
+        db.createDB();
         javax.swing.SwingUtilities.invokeLater(()-> {
             new Main();
         });
