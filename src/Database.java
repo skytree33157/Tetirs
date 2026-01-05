@@ -57,7 +57,6 @@ public class Database {
             checkPstmt.setString(1,username);
             ResultSet rs = checkPstmt.executeQuery();
             if(rs.next()&&rs.getInt(1)>0){
-                System.out.println("이미 존재하는 아이디입니다.");
                 return false;
             }
 
@@ -73,23 +72,28 @@ public class Database {
         }
     }
 
-    public boolean login(String username, String password){
+    public int login(String username, String password){
         try{
             Connection con = getConnection();
 
-            String loginSql = "select userID from user where username = ? and password = ?";
+            String loginSql = "select userID, password from user where username = ?";
             PreparedStatement loginSqlPtsmt = con.prepareStatement(loginSql);
             loginSqlPtsmt.setString(1,username);
-            loginSqlPtsmt.setString(2,password);
             ResultSet rs = loginSqlPtsmt.executeQuery();
+
             if(rs.next()){
-                return true;
+                String userPassword=rs.getString("password");
+                if(userPassword.equals(password))
+                    return rs.getInt("userID");
+                else
+                    return -1;
             }
+            else return -2;
         }
         catch(SQLException e){
             System.out.println("SQLException"+e);
         }
-        return false;
+        return -2;
     }
 
     public void saveScore(int userID, int score){
@@ -107,5 +111,32 @@ public class Database {
         catch(SQLException e){
             System.out.println("SQLException"+e);
         }
+    }
+
+    public String ranking(){
+        try{
+            Connection con=getConnection();
+            String rankSql = "select user.username, gameScore.score " +
+                    "from user " +
+                    "join gameScore on user.userID=gameScore.userID " +
+                    "order by gameScore.score desc " +
+                    "limit 10";
+            PreparedStatement rankPstmt = con.prepareStatement(rankSql);
+            ResultSet rs = rankPstmt.executeQuery();
+            int rank=1;
+            StringBuilder str = new StringBuilder();
+            str.append("------ranking-----\n");
+            while(rs.next()){
+                String username=rs.getString("username");
+                int score=rs.getInt("score");
+                str.append(rank).append(". ").append(username).append(" : ").append(score).append("\n");
+                rank++;
+            }
+            return str.toString();
+        }
+        catch(SQLException e){
+            System.out.println("SQLException"+e);
+        }
+        return null;
     }
 }

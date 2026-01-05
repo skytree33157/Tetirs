@@ -29,6 +29,9 @@ public class GamePanel extends JPanel{
     private JTextField idField;
     private JPasswordField pwField;
 
+    private int userID=-1;
+    private String rankStr="";
+
     public GamePanel(){
         setBackground(Color.BLACK);
         //패널 크기
@@ -67,7 +70,8 @@ public class GamePanel extends JPanel{
                     if(checkCollision(block.getX(), block.getY())){
                         isGameOver = true;
                         timer.stop();
-                        //db.saveScore(UserID,score);
+                        db.saveScore(userID,score);
+                        rankStr=db.ranking();
                     }
                 }
                 repaint();
@@ -108,11 +112,16 @@ public class GamePanel extends JPanel{
         loginBtn.addActionListener(e->{
             String id=idField.getText();
             String pw=new String(pwField.getPassword());
-            if(db.login(id,pw)){
+
+            userID=db.login(id,pw);
+            if(userID>0){
                 startGame();
             }
+            else if(userID==-1){
+                JOptionPane.showMessageDialog(this,"비밀번호 틀림");
+            }
             else{
-                JOptionPane.showMessageDialog(this,"로그인 실패");
+                JOptionPane.showMessageDialog(this,"회원가입 해주세요");
             }
         });
 
@@ -237,8 +246,14 @@ public class GamePanel extends JPanel{
             g.fillRect(0,0,getWidth(),getHeight());
 
             g.setColor(Color.white);
-            g.drawString("Game Over", getWidth()/2, getHeight()/2);
-            g.drawString("Score: "+ score, getWidth()/2, getHeight()/2+50);
+            String[] lines = rankStr.split("\n");
+            int y=150;
+            for(String line:lines){
+                int strwidth=g.getFontMetrics().stringWidth(line);
+                int x=(getWidth()-strwidth)/2;
+                g.drawString(line,x,y);
+                y+=30;
+            }
         }
     }
 
